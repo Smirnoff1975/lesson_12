@@ -1,0 +1,23 @@
+#!/bin/bash
+
+
+awk 'BEGIN {printf "%7s %7s %-6s %s\n","PID","PPID","STAT","COMMAND"}' > pps.tmp
+for i in /proc/[0-9]*
+do
+        pid=${i##*/}
+        if [[ $pid =~ ^[0-9]+$ ]]
+        then
+                comm=$(tr '\0' ' ' < "$i/cmdline" 2>/dev/null)
+                if [[ -n $comm ]]
+                then
+                        comm=" :${comm}"
+                fi
+                s=$(awk -v cm="$comm" 'gsub(/[()]/,"",$2) {printf "%7s %7s %-6s %s %s\n", $1, $4, $3, $2, cm}' $i/stat 2>/dev/null)
+                if [[ -n "$s" ]]
+                then
+                        echo "$s" >> pps.tmp
+                fi
+
+        fi
+done
+cat pps.tmp
